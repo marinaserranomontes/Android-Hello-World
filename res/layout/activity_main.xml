@@ -4,16 +4,17 @@
     android:layout_height="match_parent"
     >
 
-    <SurfaceView
+    <RelativeLayout
         android:layout_width="480dp"
         android:layout_height="360dp"
         android:id="@+id/publisherview"
         android:layout_alignParentLeft="true" />
 
-    <SurfaceView
+    <RelativeLayout
         android:layout_width="480dp"
         android:layout_height="360dp"
         android:id="@+id/subscriberview"
-        android:layout_alignParentRight="true" />
+        android:layout_alignParentRight="true" 
+        android:paddingLeft="35dp"/>
     
 </RelativeLayout>

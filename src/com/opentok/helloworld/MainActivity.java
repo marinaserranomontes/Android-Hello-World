@@ -4,17 +4,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.pm.ActivityInfo;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.util.Log;
 import android.view.Menu;
-import android.view.SurfaceHolder;
-import android.view.SurfaceHolder.Callback;
-import android.view.SurfaceView;
+import android.widget.RelativeLayout;
 
 import com.opentok.Publisher;
 import com.opentok.Session;
@@ -27,30 +27,38 @@ import com.opentok.Subscriber;
  * SurfaceHolder instances for each component.
  *  
  */
-public class MainActivity extends Activity implements Publisher.Listener, Session.Listener, Callback {
-	ExecutorService executor;
-	SurfaceView publisherView;
-	SurfaceView subscriberView;
-	Camera camera;
-	Publisher publisher;
-	Subscriber subscriber;
+public class MainActivity extends Activity implements Publisher.Listener, Subscriber.Listener, Session.Listener {
+	
+	private static final String LOGTAG = "hello-world";
+	private static final boolean AUTO_CONNECT = true;
+	private static final boolean AUTO_PUBLISH = true;
+	
+	/*Fill the following variables using your own Project info from the Dashboard*/
+	private static String API_KEY = "25173032"; // Replace with your API Key
+	private static String SESSION_ID ="1_MX4yNTE3MzAzMn4xMjcuMC4wLjF-TW9uIE1heSAwNiAwMDoyOToyMiBQRFQgMjAxM34wLjIzNjA3NTR-"; // Replace with your generated Session ID
+	// Replace with your generated Token (use Project Tools or from a server-side library)
+	private static String TOKEN = "T1==cGFydG5lcl9pZD0yNTE3MzAzMiZzZGtfdmVyc2lvbj10YnJ1YnktdGJyYi12MC45MS4yMDExLTAyLTE3JnNpZz04YzU2MjM2NzQxM2JjODFlNTQzNzkxY2QzMTFmMDgxNTIwMGY4NWM3OnJvbGU9cHVibGlzaGVyJnNlc3Npb25faWQ9MV9NWDR5TlRFM016QXpNbjR4TWpjdU1DNHdMakYtVFc5dUlFMWhlU0F3TmlBd01Eb3lPVG95TWlCUVJGUWdNakF4TTM0d0xqSXpOakEzTlRSLSZjcmVhdGVfdGltZT0xMzY3ODI1MzY0Jm5vbmNlPTAuNjY5OTA5NDgyMTM3ODM1NCZleHBpcmVfdGltZT0xMzcwNDE3MzY0JmNvbm5lY3Rpb25fZGF0YT0=";
+
+	private ExecutorService executor;
+	private RelativeLayout publisherView;
+	private RelativeLayout subscriberView;
+	private Publisher publisher;
+	private Subscriber subscriber;
 	private Session session;
 	private WakeLock wakeLock;
+	private boolean subscriberToSelf=true; // Change to false if you want to subscribe to streams other than your own.
+
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
 		setContentView(R.layout.activity_main);
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 		
-		publisherView = (SurfaceView)findViewById(R.id.publisherview);
-		subscriberView = (SurfaceView)findViewById(R.id.subscriberview);
+		publisherView = (RelativeLayout)findViewById(R.id.publisherview);
+		subscriberView = (RelativeLayout)findViewById(R.id.subscriberview);
 		
-		// Although this call is deprecated, Camera preview still seems to require it :-\
-		publisherView.getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		// SurfaceHolders are not initially available, so we'll wait to create the publisher
-		publisherView.getHolder().addCallback(this);
-
 		// A simple executor will allow us to perform tasks asynchronously.
 		executor = Executors.newCachedThreadPool();
 
@@ -58,6 +66,10 @@ public class MainActivity extends Activity implements Publisher.Listener, Sessio
 		PowerManager powerManager = (PowerManager)getSystemService(Context.POWER_SERVICE);
 		wakeLock = powerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK,
 						"Full Wake Lock");
+		
+		if(AUTO_CONNECT){
+			sessionConnect();
+		}
 	}
 
 	@Override
@@ -69,17 +81,21 @@ public class MainActivity extends Activity implements Publisher.Listener, Sessio
 	@Override
 	public void onStop() {
 		super.onStop();
-
+		
+		//release the session
+		if(session!=null){
+			session.disconnect();
+		}
 		if (wakeLock.isHeld()) {
 			wakeLock.release();
 		}
-		// Release the camera when the application is being destroyed, lest we can't acquire it again later.
-		if (null != camera) camera.release();
+		
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
+		
 		if (!wakeLock.isHeld()) {
 			wakeLock.acquire();
 		}
@@ -88,111 +104,141 @@ public class MainActivity extends Activity implements Publisher.Listener, Sessio
 	@Override
 	protected void onPause() {
 		super.onPause();
+		
 		if (wakeLock.isHeld()) {
 			wakeLock.release();
 		}
 	}
-
-	/**
-	 * Invoked when Our Publisher's rendering surface comes available.
-	 */
-	@Override
-	public void surfaceChanged(SurfaceHolder arg0, int arg1, int arg2, int arg3) {
-		if (publisher == null) {
-			executor.submit(new Runnable() {
-
-				@Override
-				public void run() {
-					try {
-						// This usually maps to the front camera.
-						camera = Camera.open(Camera.getNumberOfCameras() - 1);
-						camera.setPreviewDisplay(publisherView.getHolder());
-						// Note: preview will continue even if we fail to connect.
-						camera.startPreview();
-
-						// Since our Publisher is ready, go ahead and prepare session instance and connect.
-						session = Session.newInstance(getApplicationContext(), 
-								"2_MX4xMzExMjU3MX43Mi41LjE2Ny4xNTh-VGh1IE9jdCAxOCAxNToxMzoyOCBQRFQgMjAxMn4wLjMzMjY4NDF-",
-								"T1==cGFydG5lcl9pZD0xMzExMjU3MSZzaWc9ZmFjMmIwZGI1ZjQ4NzdjY2VlOTEzYzkzN2UxNDQ2MTAwODY3Mjk0Njpyb2xlPW1vZGVyYXRvciZzZXNzaW9uX2lkPTJfTVg0eE16RXhNalUzTVg0M01pNDFMakUyTnk0eE5UaC1WR2gxSUU5amRDQXhPQ0F4TlRveE16b3lPQ0JRUkZRZ01qQXhNbjR3TGpNek1qWTROREYtJmNyZWF0ZV90aW1lPTEzNTc3MjIwNTEmbm9uY2U9MC40MzYxNzgxODY5MjMwNTI1NQ==",
-								"13112571",
-								MainActivity.this);
-						session.connect();
-
-					} catch (Throwable t) {
-						t.printStackTrace();
-					}
-
-				}});
-		}
+	
+	
+	private void sessionConnect(){
+		
+		executor.submit(new Runnable() {
+			public void run() {
+				session = Session.newInstance(MainActivity.this, 
+						SESSION_ID, TOKEN, API_KEY,
+						MainActivity.this);
+				if(session!=null){
+					session.connect();
+				}
+			}});
+		
 	}
 
-	@Override
-	public void surfaceCreated(SurfaceHolder arg0) {
-		// TODO Auto-generated method stub
-
+	
+	private void showAlert(String message){
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		 
+	    builder.setTitle("Message from video session ");
+	    builder.setMessage(message);
+	    builder.setPositiveButton("OK", new OnClickListener() {
+	        public void onClick(DialogInterface dialog, int which) {
+	            dialog.cancel();
+	        }
+	    });
+	    builder.create();
+	    builder.show();
+	  
 	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
+	
 	@Override
 	public void onSessionConnected() {
-		executor.submit(new Runnable() {
+		Log.i(LOGTAG,"session connected");
+		
+		runOnUiThread(new Runnable() {
 
 			@Override
 			public void run() {
-				// Session is ready to publish. Create Publisher instance from our rendering surface and camera, then connect.
-				publisher = session.createPublisher(camera, publisherView.getHolder());
-				publisher.connect();
+				
+				// Session is ready to publish. 
+				if(AUTO_PUBLISH){
+					//Create Publisher instance.
+					publisher=session.createPublisher();
+					if(publisher!=null){
+						publisher.setName("hello");
+						publisher.setListener(MainActivity.this);
+						publisherView.addView(publisher.getView());
+						publisher.connect();
+					}	
+				}
+				
 			}});
 	}
 
 	@Override
-	public void onSessionDidReceiveStream(final Stream stream) {
-		executor.submit(new Runnable() {
-
+	public void onSessionReceivedStream(final Stream stream) {
+		Log.i(LOGTAG,"session received stream");
+		
+		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				// If this incoming stream is our own Publisher stream, let's look in the mirror.
-				if (publisher.getStreamId().equals(stream.getStreamId())) {
-					subscriber = session.createSubscriber(subscriberView, stream);
-					subscriber.connect();
+				if((subscriberToSelf && session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId()) ) || 
+						(!subscriberToSelf && !(session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId())))){
+						//If this incoming stream is our own Publisher stream, let's look in the mirror.
+						subscriber = session.createSubscriber(stream);
+						if(subscriber!=null){
+							subscriberView.addView(subscriber.getView());	
+							subscriber.setListener(MainActivity.this);
+							subscriber.connect();
+							
+						}
 				}
 			}});
 	}
 
 	@Override
 	public void onPublisherStreamingStarted() {
-		Log.i("hello-world", "publisher is streaming!");
+		Log.i(LOGTAG, "publisher is streaming!");
 	}
 
-	@Override
-	public void onPublisherFailed() {
-		Log.e("hello-world", "publisher failed!");
-	}
 
 	@Override
-	public void onSessionDidDropStream(Stream stream) {
-		Log.i("hello-world", String.format("stream %d dropped", stream.toString()));
+	public void onSessionDroppedStream(Stream stream) {
+		Log.i(LOGTAG, String.format("stream %d dropped", stream.toString()));
 	}
 
 	@Override
 	public void onSessionError(Exception cause) {
-		Log.e("hello-world", "session failed! "+cause.toString());	
+		Log.e(LOGTAG, "session failed! "+cause.toString());	
+		showAlert("There was an error connecting to session "+session.getSessionId());
 	}
 
 	@Override
 	public void onSessionDisconnected() {
-		Log.i("hello-world", "session disconnected");	
+		Log.i(LOGTAG, "session disconnected");	
+		showAlert("Session disconnected: "+session.getSessionId());
 	}
 
 	@Override
 	public void onPublisherDisconnected() {
-		Log.i("hello-world", "publisher disconnected");	
+		Log.i(LOGTAG, "publisher disconnected");	
 
 	}
+
+	@Override
+	public void onPublisherChangedCamera(int cameraId) {
+		Log.i(LOGTAG, "publisher changed camera to cameraId: "+cameraId);	
+		
+	}
+
+	@Override
+	public void onPublisherFailed(Exception cause) {
+		Log.i(LOGTAG, "publisher failed! "+ cause.toString());	
+		showAlert("There was an error publishing");
+	}
+
+	@Override
+	public void onSubscriberConnected(Subscriber subscriber) {
+		Log.i(LOGTAG, "subscriber connected");	
+		
+	}
+
+	@Override
+	public void onSubscriberFailed(Subscriber subscriber, Exception cause) {
+		Log.i(LOGTAG, "subscriber "+ subscriber +" failed! "+ cause.toString());	
+		showAlert("There was an error subscribing to stream "+subscriber.getStream().getStreamId());
+	}
+
 
 }
