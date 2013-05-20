@@ -118,9 +118,8 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 				session = Session.newInstance(MainActivity.this, 
 						SESSION_ID, TOKEN, API_KEY,
 						MainActivity.this);
-				if(session!=null){
-					session.connect();
-				}
+				session.connect();
+			
 			}});
 		
 	}
@@ -155,12 +154,11 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 				if(AUTO_PUBLISH){
 					//Create Publisher instance.
 					publisher=session.createPublisher();
-					if(publisher!=null){
-						publisher.setName("hello");
-						publisher.setListener(MainActivity.this);
-						publisherView.addView(publisher.getView());
-						publisher.connect();
-					}	
+					publisher.setName("hello");
+					publisher.setListener(MainActivity.this);
+					publisherView.addView(publisher.getView());
+					publisher.connect();
+						
 				}
 				
 			}});
@@ -173,16 +171,15 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				if((subscriberToSelf && session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId()) ) || 
+				if((subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
 						(!subscriberToSelf && !(session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId())))){
 						//If this incoming stream is our own Publisher stream, let's look in the mirror.
 						subscriber = session.createSubscriber(stream);
-						if(subscriber!=null){
-							subscriberView.addView(subscriber.getView());	
-							subscriber.setListener(MainActivity.this);
-							subscriber.connect();
+						subscriberView.addView(subscriber.getView());	
+						subscriber.setListener(MainActivity.this);
+						subscriber.connect();
 							
-						}
+						
 				}
 			}});
 	}
