@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.widget.RelativeLayout;
 
+import com.opentok.OpentokException;
 import com.opentok.Publisher;
 import com.opentok.Session;
 import com.opentok.Stream;
@@ -157,7 +158,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					publisher.setName("hello");
 					publisher.setListener(MainActivity.this);
 					publisherView.addView(publisher.getView());
-					publisher.connect();
+					publisher.publish();
 						
 				}
 				
@@ -177,7 +178,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 						subscriber = session.createSubscriber(stream);
 						subscriberView.addView(subscriber.getView());	
 						subscriber.setListener(MainActivity.this);
-						subscriber.connect();
+						subscriber.subscribe();
 							
 						
 				}
@@ -195,12 +196,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		Log.i(LOGTAG, String.format("stream %d dropped", stream.toString()));
 	}
 
-	@Override
-	public void onSessionError(Exception cause) {
-		Log.e(LOGTAG, "session failed! "+cause.toString());	
-		showAlert("There was an error connecting to session "+session.getSessionId());
-	}
-
+	
 	@Override
 	public void onSessionDisconnected() {
 		Log.i(LOGTAG, "session disconnected");	
@@ -208,7 +204,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	}
 
 	@Override
-	public void onPublisherDisconnected() {
+	public void onPublisherStreamingStopped() {
 		Log.i(LOGTAG, "publisher disconnected");	
 
 	}
@@ -219,11 +215,6 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		
 	}
 
-	@Override
-	public void onPublisherFailed(Exception cause) {
-		Log.i(LOGTAG, "publisher failed! "+ cause.toString());	
-		showAlert("There was an error publishing");
-	}
 
 	@Override
 	public void onSubscriberConnected(Subscriber subscriber) {
@@ -231,11 +222,27 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		
 	}
 
+
 	@Override
-	public void onSubscriberFailed(Subscriber subscriber, Exception cause) {
-		Log.i(LOGTAG, "subscriber "+ subscriber +" failed! "+ cause.toString());	
-		showAlert("There was an error subscribing to stream "+subscriber.getStream().getStreamId());
+	public void onSessionException(OpentokException exception) {
+		Log.e(LOGTAG, "session failed! "+exception.toString());	
+		showAlert("There was an error connecting to session "+session.getSessionId());
+	}
+	
+
+	@Override
+	public void onSubscriberException(Subscriber arg0, OpentokException exception) {
+		Log.i(LOGTAG, "subscriber "+ subscriber +" failed! "+ exception.toString());	
+		showAlert("There was an error subscribing to stream "+subscriber.getStream().getStreamId());	
 	}
 
+	
+	@Override
+	public void onPublisherException(OpentokException exception) {
+		Log.i(LOGTAG, "publisher failed! "+ exception.toString());	
+		showAlert("There was an error publishing");
+	
+		
+	}
 
 }
