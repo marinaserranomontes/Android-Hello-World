@@ -14,6 +14,7 @@ import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.util.Log;
 import android.view.Menu;
+import android.view.View;
 import android.widget.RelativeLayout;
 
 import com.opentok.OpentokException;
@@ -21,6 +22,8 @@ import com.opentok.Publisher;
 import com.opentok.Session;
 import com.opentok.Stream;
 import com.opentok.Subscriber;
+import com.opentok.view.OverlayView;
+import com.opentok.view.OverlayView.ButtonType;
 
 /**
  * This application demonstrates the basic workflow for getting started with the OpenTok Android SDK.
@@ -28,7 +31,7 @@ import com.opentok.Subscriber;
  * SurfaceHolder instances for each component.
  *  
  */
-public class MainActivity extends Activity implements Publisher.Listener, Subscriber.Listener, Session.Listener {
+public class MainActivity extends Activity implements Publisher.Listener, Subscriber.Listener, Session.Listener, OverlayView.Listener {
 	
 	private static final String LOGTAG = "hello-world";
 	private static final boolean AUTO_CONNECT = true;
@@ -42,7 +45,9 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 
 	private ExecutorService executor;
 	private RelativeLayout publisherView;
+	private OverlayView publisherOverlayView;	
 	private RelativeLayout subscriberView;
+	private OverlayView subscriberOverlayView;
 	private Publisher publisher;
 	private Subscriber subscriber;
 	private Session session;
@@ -125,7 +130,6 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		
 	}
 
-	
 	private void showAlert(String message){
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -140,6 +144,23 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	    builder.create();
 	    builder.show();
 	  
+	}
+	
+	private class PublisherClickViewListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View arg0) {
+			
+			if (publisherOverlayView == null) {
+				publisherOverlayView= new OverlayView(MainActivity.this, OverlayView.ViewType.PublisherView, publisher.getName(), MainActivity.this);
+			    publisherView.addView(publisherOverlayView);
+			    publisherOverlayView.setVisibility(View.INVISIBLE);
+
+			 }
+			 publisherOverlayView.toggleVisibility();
+
+		
+			}
 	}
 	
 	@Override
@@ -159,6 +180,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					publisher.setListener(MainActivity.this);
 					publisherView.addView(publisher.getView());
 					publisher.publish();
+					publisherView.setOnClickListener(new PublisherClickViewListener());
 						
 				}
 				
@@ -242,6 +264,12 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		Log.i(LOGTAG, "publisher failed! "+ exception.toString());	
 		showAlert("There was an error publishing");
 	
+		
+	}
+
+	@Override
+	public void onOverlayControlButtonClicked(ButtonType arg0, int arg1) {
+		// TODO Auto-generated method stub
 		
 	}
 
