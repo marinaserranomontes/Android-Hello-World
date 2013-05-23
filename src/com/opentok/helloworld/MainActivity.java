@@ -83,7 +83,6 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	public void onStop() {
 		super.onStop();
 		
-		Log.i(LOGTAG, "onStop");
 		//release the session
 		if(session!=null){
 			session.disconnect();
