@@ -83,6 +83,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	public void onStop() {
 		super.onStop();
 		
+		Log.i(LOGTAG, "onStop");
 		//release the session
 		if(session!=null){
 			session.disconnect();
@@ -117,9 +118,8 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		executor.submit(new Runnable() {
 			public void run() {
 				session = Session.newInstance(MainActivity.this, 
-						SESSION_ID, TOKEN, API_KEY,
-						MainActivity.this);
-				session.connect();
+						SESSION_ID, MainActivity.this);
+				session.connect(TOKEN);
 			
 			}});
 		
@@ -154,11 +154,12 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 				// Session is ready to publish. 
 				if(AUTO_PUBLISH){
 					//Create Publisher instance.
-					publisher=session.createPublisher();
+					publisher=Publisher.newInstance(MainActivity.this);
 					publisher.setName("hello");
 					publisher.setListener(MainActivity.this);
 					publisherView.addView(publisher.getView());
-					publisher.publish();
+					session.publish(publisher);
+				
 						
 				}
 				
@@ -172,13 +173,13 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				if((subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
+				if(!(subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
 						(!subscriberToSelf && !(session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId())))){
 						//If this incoming stream is our own Publisher stream, let's look in the mirror.
-						subscriber = session.createSubscriber(stream);
+						subscriber = Subscriber.newInstance(MainActivity.this, stream);
 						subscriberView.addView(subscriber.getView());	
 						subscriber.setListener(MainActivity.this);
-						subscriber.subscribe();
+						session.subscribe(subscriber);
 							
 						
 				}
@@ -193,7 +194,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 
 	@Override
 	public void onSessionDroppedStream(Stream stream) {
-		Log.i(LOGTAG, String.format("stream %d dropped", stream.toString()));
+		Log.i(LOGTAG, String.format("stream dropped", stream.toString()));
 	}
 
 	
