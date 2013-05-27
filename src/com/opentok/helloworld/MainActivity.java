@@ -12,6 +12,7 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -22,8 +23,7 @@ import com.opentok.Publisher;
 import com.opentok.Session;
 import com.opentok.Stream;
 import com.opentok.Subscriber;
-import com.opentok.view.OverlayView;
-import com.opentok.view.OverlayView.ButtonType;
+import com.opentok.view.ControlBarView;
 
 /**
  * This application demonstrates the basic workflow for getting started with the OpenTok Android SDK.
@@ -31,7 +31,7 @@ import com.opentok.view.OverlayView.ButtonType;
  * SurfaceHolder instances for each component.
  *  
  */
-public class MainActivity extends Activity implements Publisher.Listener, Subscriber.Listener, Session.Listener, OverlayView.Listener {
+public class MainActivity extends Activity implements Publisher.Listener, Subscriber.Listener, Session.Listener, ControlBarView.Listener{
 	
 	private static final String LOGTAG = "hello-world";
 	private static final boolean AUTO_CONNECT = true;
@@ -45,9 +45,10 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 
 	private ExecutorService executor;
 	private RelativeLayout publisherView;
-	private OverlayView publisherOverlayView;	
+	private ControlBarView publisherControlBarView;	
 	private RelativeLayout subscriberView;
-	private OverlayView subscriberOverlayView;
+	private ControlBarView subscriberControlBarView;
+	private RelativeLayout mainLayout;
 	private Publisher publisher;
 	private Subscriber subscriber;
 	private Session session;
@@ -55,15 +56,17 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	private boolean subscriberToSelf=true; // Change to false if you want to subscribe to streams other than your own.
 
 
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
 		setContentView(R.layout.activity_main);
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-		
+			
 		publisherView = (RelativeLayout)findViewById(R.id.publisherview);
 		subscriberView = (RelativeLayout)findViewById(R.id.subscriberview);
+		mainLayout = (RelativeLayout) findViewById(R.id.activitymain);
+		
 		
 		// A simple executor will allow us to perform tasks asynchronously.
 		executor = Executors.newCachedThreadPool();
@@ -122,9 +125,8 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		executor.submit(new Runnable() {
 			public void run() {
 				session = Session.newInstance(MainActivity.this, 
-						SESSION_ID, TOKEN, API_KEY,
-						MainActivity.this);
-				session.connect();
+						SESSION_ID, MainActivity.this);
+				session.connect(TOKEN);
 			
 			}});
 		
@@ -132,18 +134,19 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 
 	private void showAlert(String message){
 		
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		if(!this.isFinishing()){
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		 
-	    builder.setTitle("Message from video session ");
-	    builder.setMessage(message);
-	    builder.setPositiveButton("OK", new OnClickListener() {
-	        public void onClick(DialogInterface dialog, int which) {
-	            dialog.cancel();
-	        }
-	    });
-	    builder.create();
-	    builder.show();
-	  
+			builder.setTitle("Message from video session ");
+			builder.setMessage(message);
+			builder.setPositiveButton("OK", new OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
+			builder.create();
+			builder.show();
+		}
 	}
 	
 	private class PublisherClickViewListener implements View.OnClickListener {
@@ -151,17 +154,57 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		@Override
 		public void onClick(View arg0) {
 			
-			if (publisherOverlayView == null) {
-				publisherOverlayView= new OverlayView(MainActivity.this, OverlayView.ViewType.PublisherView, publisher.getName(), MainActivity.this);
-			    publisherView.addView(publisherOverlayView);
-			    publisherOverlayView.setVisibility(View.INVISIBLE);
+			if (publisherControlBarView == null) {
+				
+			  publisherControlBarView= new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, publisher.getName(), mainLayout, MainActivity.this);
+			  mainLayout.addView(publisherControlBarView);  
+			    
+			  publisherControlBarView.setVisibility(View.INVISIBLE);
 
 			 }
-			 publisherOverlayView.toggleVisibility();
+			  publisherControlBarView.toggleVisibility();
 
-		
-			}
+		    }
 	}
+	
+	private class ControlBarClickViewListener implements View.OnClickListener {
+		 String streamName;
+	   
+		
+		public ControlBarClickViewListener(String streamName) {
+	        this.streamName = streamName;
+	    }
+		
+		@Override
+		public void onClick(View arg0) {
+			
+			runOnUiThread(new Runnable() {
+
+				@Override
+				public void run() {
+					if(publisher!=null && publisherView!=null){
+						if (publisherControlBarView == null) {
+						
+							publisherControlBarView= new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, publisher.getName(), mainLayout, MainActivity.this);
+							mainLayout.addView(publisherControlBarView);   
+							publisherControlBarView.setVisibility(View.INVISIBLE);
+						 
+						 }
+						publisherControlBarView.toggleVisibility();
+					}	
+
+					if(subscriber!=null && subscriberView!=null){
+						if(subscriberControlBarView==null){
+							subscriberControlBarView= new ControlBarView(MainActivity.this, ControlBarView.ViewType.SubscriberView, streamName, mainLayout, MainActivity.this);
+							subscriberView.addView(subscriberControlBarView);
+							subscriberControlBarView.setVisibility(View.INVISIBLE);
+
+						}	
+						subscriberControlBarView.toggleVisibility();
+						
+					}}
+			});
+	}}
 	
 	@Override
 	public void onSessionConnected() {
@@ -175,12 +218,19 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 				// Session is ready to publish. 
 				if(AUTO_PUBLISH){
 					//Create Publisher instance.
-					publisher=session.createPublisher();
+					publisher=Publisher.newInstance(MainActivity.this);
 					publisher.setName("hello");
 					publisher.setListener(MainActivity.this);
+					RelativeLayout.LayoutParams publisherViewParams= new RelativeLayout.LayoutParams(320, 240);
+					
+					publisherViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+					publisherViewParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
+					publisherViewParams.setMargins(8, 0, 8, 0);
+					publisher.getView().setLayoutParams(publisherViewParams);
 					publisherView.addView(publisher.getView());
-					publisher.publish();
-					publisherView.setOnClickListener(new PublisherClickViewListener());
+					publisherView.setOnClickListener(new ControlBarClickViewListener(publisher.getName()));
+					session.publish(publisher);
+				
 						
 				}
 				
@@ -197,12 +247,15 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 				if((subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
 						(!subscriberToSelf && !(session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId())))){
 						//If this incoming stream is our own Publisher stream, let's look in the mirror.
-						subscriber = session.createSubscriber(stream);
-						subscriberView.addView(subscriber.getView());	
-						subscriber.setListener(MainActivity.this);
-						subscriber.subscribe();
-							
+						subscriber = Subscriber.newInstance(MainActivity.this, stream);
+						subscriber.getView().setLayoutParams(new RelativeLayout.LayoutParams(getScreenSize().widthPixels, getScreenSize().heightPixels));
+						subscriberView.addView(subscriber.getView());
 						
+						subscriber.setListener(MainActivity.this);
+						subscriberView.setOnClickListener(new ControlBarClickViewListener(stream.getName()));
+						
+						session.subscribe(subscriber);
+					
 				}
 			}});
 	}
@@ -210,12 +263,14 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 	@Override
 	public void onPublisherStreamingStarted() {
 		Log.i(LOGTAG, "publisher is streaming!");
+		
+		
 	}
 
 
 	@Override
 	public void onSessionDroppedStream(Stream stream) {
-		Log.i(LOGTAG, String.format("stream %d dropped", stream.toString()));
+		Log.i(LOGTAG, String.format("stream dropped", stream.toString()));
 	}
 
 	
@@ -267,10 +322,46 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 		
 	}
 
-	@Override
-	public void onOverlayControlButtonClicked(ButtonType arg0, int arg1) {
-		// TODO Auto-generated method stub
-		
+	public DisplayMetrics getScreenSize(){
+	
+		DisplayMetrics displaymetrics = new DisplayMetrics();
+		getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+	 
+		return displaymetrics;
 	}
 
+
+	@Override
+	public void onOverlayControlButtonClicked(com.opentok.view.ControlBarView.ButtonType buttonType, com.opentok.view.ControlBarView.ViewType viewType, int status) {
+		
+		switch (buttonType) {
+		case MuteButton:
+				switch(viewType){
+				case PublisherView:
+					if (0 < status) {
+						publisher.setPublishAudio(false);
+					} else {
+						publisher.setPublishAudio(true);
+					}
+					break;
+				case SubscriberView:
+					if (0 < status) {
+						subscriber.setSubscribeToAudio(false);
+					} else {
+						subscriber.setSubscribeToAudio(true);
+					}
+					break;
+				default:
+					break;
+				
+				}
+				
+			break;
+		case CameraButton:
+			publisher.swapCamera();
+			break;
+		}
+	
+		
+	}
 }
