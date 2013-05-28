@@ -9,7 +9,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.text.TextUtils.TruncateAt;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -17,53 +16,74 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+/**
+ * ControlBarView contains the UI resources to mute/unmute audio for subscriber and publisher
+ * and to switch camera for publisher.
+ * It shows the name of stream.
+ * It is hidden for subscriber and publisher. It appears when subscriber or publisher views are clicked.
+ * After 8 seconds, it is hidden.
+ */
 public class ControlBarView  extends RelativeLayout {
-	
-	private static final String LOGTAG = "hello-world-view";
-	private final static int CONTROL_BUTTON_WIDTH= 32;
-	private final static int CONTROL_BUTTON_HEIGHT = 32;
-	public final static int CONTROL_PANEL_HEIGHT= 48; //160
-	
-	private boolean muteState = false;
+    private static final String LOGTAG = "hello-world-view";
+    private static final int CONTROL_BUTTON_WIDTH = 32;
+    private static final int CONTROL_BUTTON_HEIGHT = 32;
+    public static final int CONTROL_PANEL_HEIGHT = 48; //160
+    private boolean muteState = false;
     private String name;
-	private TextView nameBar;
-	private LinearLayout leftControlBar;
-	private LinearLayout rightControlBar;
-	private SVGButtonLayout muteButtonContainer;
-	private SVGButtonLayout camButtonContainer;
-	private ViewType viewType;
-	private RelativeLayout mainLayout;
-	private long visibilityExpirationTime;
-	private Context context;
-	private Boolean showNameBar;
-	private Listener controlBarListener;
-	
-	public static enum LayoutMode {
-		Minimal, //title bar disabled - 48dp (sub), 96dp (pub)
+    private TextView nameBar;
+    private LinearLayout leftControlBar;
+    private LinearLayout rightControlBar;
+    private SVGButtonLayout muteButtonContainer;
+    private SVGButtonLayout camButtonContainer;
+    private ViewType viewType;
+    private RelativeLayout mainLayout;
+    private long visibilityExpirationTime;
+    private Context context;
+    private Boolean showNameBar;
+    private Listener controlBarListener;
+
+    /**
+     * Layout Mode depending on density.
+     **/
+    public static enum LayoutMode {
+    	Minimal, //title bar disabled - 48dp (sub), 96dp (pub)
 		Small,   // 150dp
 		Medium,  // 320dp
 		Large,   // 500dp
-	}
+    }
 
-	public static enum ViewType{
+    /**
+     * ViewType to show controlBarView depending on subscriber or publisher version.
+     **/
+    public static enum ViewType {
 	    PublisherView,
 	    SubscriberView,
-	}
-	
-	public static enum ButtonType{
+    }
+    
+    /**
+     * ButtonType to launch different actions depending on it.
+     **/
+    public static enum ButtonType {
 	    MuteButton,
 	    CameraButton,
-	} 
+    }
 	
-	public ControlBarView(Context context, ViewType type, String name, RelativeLayout mainLayout, Listener listener) {
+    /**
+     * ControlBarView
+     * @param type, publisher or subscriber view.
+     * @param name, stream name.
+     * @param mainLayout, main app container.
+     * @param listener, listener for controlbar actions.
+     **/
+    public ControlBarView(Context context, ViewType type, String name, RelativeLayout mainLayout, Listener listener) {
 		super(context);
-	
+		
 		this.name = name;
-		this.viewType=type;
-		this.mainLayout=mainLayout;
-		this.context=context;
-		this.showNameBar=true;
-		this.controlBarListener=listener;
+		this.viewType = type;
+		this.mainLayout = mainLayout;
+		this.context = context;
+		this.showNameBar = true;
+		this.controlBarListener = listener;
 		
 		RelativeLayout.LayoutParams controlParams = new RelativeLayout.LayoutParams(mainLayout.getWidth(), measurePixels(CONTROL_PANEL_HEIGHT));
 		
@@ -115,7 +135,7 @@ public class ControlBarView  extends RelativeLayout {
 			
 		//camera control
 		if (ViewType.PublisherView == type) {
-		  if(Camera.getNumberOfCameras()>1){
+		  if (Camera.getNumberOfCameras() > 1){
 			//switch cameraButton
 			SVGViewButton camView = new SVGViewButton(context, SVGControlIcons.CAMERA, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
 			camButtonContainer = SVGViewButton.createSVGButtonLayout(context, true);
@@ -154,7 +174,7 @@ public class ControlBarView  extends RelativeLayout {
 		
 		
 		//label name
-		nameBar= createNameView(context);
+		nameBar = createNameView(context);
 		nameBar.setSingleLine(true);	
 		setMaxWidthNameBar();
 		nameBar.setEllipsize(TruncateAt.END);
@@ -181,13 +201,13 @@ public class ControlBarView  extends RelativeLayout {
 		}
 	}
 	
-	@Override
-	protected void onVisibilityChanged(View view, int visibility) {
+    @Override
+    protected void onVisibilityChanged(View view, int visibility) {
 		//ensures only the last change from invisible to visible can expire the view below
-		visibilityExpirationTime = System.currentTimeMillis() + 7500;
+    	visibilityExpirationTime = System.currentTimeMillis() + 7500;
 		
-		if (View.VISIBLE == visibility) {
-			Workers.submitToMainLoop(new Runnable() {
+    	if (View.VISIBLE == visibility) {
+    		Workers.submitToMainLoop(new Runnable() {
 				@Override
 				public void run() {
 					//expire the view if we're still visible and sufficient time has elapsed
@@ -198,22 +218,19 @@ public class ControlBarView  extends RelativeLayout {
 		}
 	}
 	
-	
-	
-	public TextView createNameView(Context context){
+    public TextView createNameView(Context context) {
 		
-		//components of the row
-		TextView textView = new TextView(context);
-		textView.setGravity(Gravity.CENTER);
-		textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-		textView.setTextColor(Color.WHITE);
-		textView.setText(null != this.name ? this.name : "");
+    	//components of the row
+    	TextView textView = new TextView(context);
+    	textView.setGravity(Gravity.CENTER);
+    	textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+    	textView.setTextColor(Color.WHITE);
+    	textView.setText(null != this.name ? this.name : "");
 		
-		return textView;
-
-	}
+    	return textView;
+    }
 	
-	public void adjustWidthControlBar(){		
+    public void adjustWidthControlBar() {		
 		
 		double density = context.getResources().getDisplayMetrics().density;
 		int widthDp = (int)(mainLayout.getHeight() / density);
@@ -231,14 +248,12 @@ public class ControlBarView  extends RelativeLayout {
 		}
 
 	
-	@Override
-	protected void onSizeChanged(final int width, int height, int oldw, int oldh) {
-			
-		adjustWidthControlBar();
-				
+    @Override
+    protected void onSizeChanged(final int width, int height, int oldw, int oldh) {
+    	adjustWidthControlBar();			
 	}
 
-	public void setMaxWidthNameBar(){
+    public void setMaxWidthNameBar() {
 	
 		int buttonOffset = measurePixels(56);
 	
@@ -248,8 +263,8 @@ public class ControlBarView  extends RelativeLayout {
 		if(nameBar!=null){
 			nameBar.setMaxWidth(getLayoutParams().width - buttonOffset);
 	
-			RelativeLayout.LayoutParams params= (LayoutParams) leftControlBar.getLayoutParams();
-			params.width=getLayoutParams().width - buttonOffset;
+			RelativeLayout.LayoutParams params = (LayoutParams) leftControlBar.getLayoutParams();
+			params.width = getLayoutParams().width - buttonOffset;
 		
 			leftControlBar.requestLayout();
 			nameBar.requestLayout();
@@ -292,16 +307,14 @@ public class ControlBarView  extends RelativeLayout {
 				break;
 			}
 		//updating left control bar
-		if(leftControlBar!=null){
+		if (leftControlBar != null) {
 			if (showNameBar) {
 				leftControlBar.setVisibility(View.VISIBLE);
 			} else {
-			leftControlBar.setVisibility(View.GONE);
+				leftControlBar.setVisibility(View.GONE);
 			}
 		}
-	
 		setLayoutParams(params);
-	
 	}
 	
 	public static interface Listener {
