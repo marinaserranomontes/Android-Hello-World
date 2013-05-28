@@ -1,5 +1,6 @@
 package com.opentok.view;
 
+import com.opentok.helloworld.R;
 import com.opentok.runtime.Workers;
 
 import com.opentok.view.SVGViewButton.SVGButtonLayout;
@@ -76,6 +77,8 @@ public class ControlBarView  extends RelativeLayout {
 			controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		}
 		setBackgroundColor(0);
+		setBackgroundResource(R.drawable.shadow_gradient);
+		
 		
 		controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		controlParams.topMargin = measurePixels(8);
@@ -91,12 +94,12 @@ public class ControlBarView  extends RelativeLayout {
 		rightControlBar = new LinearLayout(context);
 		rightControlBar.setId(0x0BA5);
 		rightControlBar.setBackgroundColor(0xFF282828);
-
+		
 		//left-aligned control bar elements
 		leftControlBar = new LinearLayout(context);
 		leftControlBar.setId(0x0F00);
 		leftControlBar.setBackgroundColor(0xFF282828);
-
+	
 		RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
 		rightControlBar.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
 
