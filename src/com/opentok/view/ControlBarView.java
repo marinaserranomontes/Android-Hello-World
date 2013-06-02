@@ -96,11 +96,13 @@ public class ControlBarView  extends RelativeLayout {
 			controlParams.addRule(mainLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
 			controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		}
+		
 		setBackgroundColor(0);
 		setBackgroundResource(R.drawable.shadow_gradient);
-		
+		getBackground().setAlpha(45);
 		
 		controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
+		controlParams.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
 		controlParams.topMargin = measurePixels(8);
 		controlParams.bottomMargin = measurePixels(8);
 		controlParams.rightMargin = measurePixels(8);
@@ -120,6 +122,7 @@ public class ControlBarView  extends RelativeLayout {
 		leftControlBar.setId(0x0F00);
 		leftControlBar.setBackgroundColor(0xFF282828);
 	
+		
 		RelativeLayout.LayoutParams rightParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
 		rightControlBar.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
 
@@ -131,8 +134,7 @@ public class ControlBarView  extends RelativeLayout {
 		rightParams.addRule(RelativeLayout.RIGHT_OF, leftControlBar.getId());
 	
 		rightControlBar.setLayoutParams(rightParams);
-
-			
+	
 		//camera control
 		if (ViewType.PublisherView == type) {
 		  if (Camera.getNumberOfCameras() > 1){
