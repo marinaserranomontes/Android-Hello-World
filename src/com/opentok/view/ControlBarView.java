@@ -9,6 +9,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.text.TextUtils.TruncateAt;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;

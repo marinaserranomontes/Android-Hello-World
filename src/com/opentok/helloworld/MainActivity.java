@@ -24,6 +24,7 @@ import com.opentok.Session;
 import com.opentok.Stream;
 import com.opentok.Subscriber;
 import com.opentok.view.ControlBarView;
+import com.opentok.helloworld.R;
 
 /**
  * This application demonstrates the basic workflow for getting started with the OpenTok Android SDK.
@@ -145,7 +146,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
     /**
      * A ControlBarClickViewListener is launched when publisher or subscriber view are clicked.
      */
-    private class ControlBarClickViewListener implements View.OnClickListener {
+    private class ControlBarClickViewListener implements View.OnClickListener{
     	private String streamName;
 	   
     	public ControlBarClickViewListener(String streamName) {
@@ -157,17 +158,17 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
         	runOnUiThread(new Runnable() {
         		@Override
 				public void run() {
+        
 					if (publisher != null && publisherView != null) {
 						if (publisherControlBarView == null) {
-						
-							publisherControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, publisher.getName(), mainLayout, MainActivity.this);
+							publisherControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, streamName, mainLayout, MainActivity.this);
 							mainLayout.addView(publisherControlBarView);   
 							publisherControlBarView.setVisibility(View.INVISIBLE);
 						 
 						 }
 						publisherControlBarView.toggleVisibility();
 					}	
-
+					
 					if (subscriber != null && subscriberView != null) {
 						if (subscriberControlBarView == null) {
 							subscriberControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.SubscriberView, streamName, mainLayout, MainActivity.this);
@@ -176,11 +177,13 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 
 						}	
 						subscriberControlBarView.toggleVisibility();
-						
-					}}
-			});
-	}}
+					}
 
+			}
+	});
+	}}
+  
+    
     @Override
     public void onSessionConnected() {
     	Log.i(LOGTAG, "session connected");
@@ -202,7 +205,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					publisherViewParams.setMargins(8, 0, 8, 0);
 					publisher.getView().setLayoutParams(publisherViewParams);
 					publisherView.addView(publisher.getView());
-					publisherView.setOnClickListener(new ControlBarClickViewListener(publisher.getName()));
+					publisher.getView().setOnClickListener(new ControlBarClickViewListener(publisher.getName()));
 					session.publish(publisher);			
 				}
 				
@@ -216,16 +219,18 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
     	runOnUiThread(new Runnable() {
     		@Override
     		public void run() {
-    			if (!(subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
+    			if ((subscriberToSelf && session.getConnection().equals(stream.getConnection()) ) || 
 						(!subscriberToSelf && !(session.getConnection().getConnectionId().equals(stream.getConnection().getConnectionId())))){
 						//If this incoming stream is our own Publisher stream, let's look in the mirror.
 						subscriber = Subscriber.newInstance(MainActivity.this, stream);
 						subscriber.getView().setLayoutParams(new RelativeLayout.LayoutParams(getScreenSize().widthPixels, getScreenSize().heightPixels));
 						subscriberView.addView(subscriber.getView());
 						subscriber.setListener(MainActivity.this);
-						subscriberView.setOnClickListener(new ControlBarClickViewListener(stream.getName()));
+						subscriber.getView().setOnClickListener(new ControlBarClickViewListener(stream.getName()));
 						session.subscribe(subscriber);
-				}
+						
+						
+    			}
 			}});
 	}
 
