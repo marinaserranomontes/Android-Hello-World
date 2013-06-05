@@ -104,10 +104,10 @@ public class ControlBarView  extends RelativeLayout {
 		
 		controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		controlParams.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
-		controlParams.topMargin = measurePixels(8);
+		//controlParams.topMargin = measurePixels(8);
 		controlParams.bottomMargin = measurePixels(8);
-		controlParams.rightMargin = measurePixels(8);
-		controlParams.leftMargin = measurePixels(8);
+		//controlParams.rightMargin = measurePixels(8);
+		//controlParams.leftMargin = measurePixels(8);
 		
 		setLayoutParams(controlParams);
 		

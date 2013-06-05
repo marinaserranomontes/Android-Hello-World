@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" >
     
-   <padding android:left="0px" android:top="6px" 
-        android:right="6px" android:bottom="6px" /> 
+   <padding android:left="0px" android:top="3px" 
+        android:right="0px" android:bottom="3px" /> 
    
    <gradient
         android:startColor="@color/drop_start"
