@@ -57,7 +57,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
     private Subscriber subscriber;
     private Session session;
     private WakeLock wakeLock;
-    private boolean subscriberToSelf = false; // Change to false if you want to subscribe to streams other than your own.
+    private boolean subscriberToSelf = true; // Change to false if you want to subscribe to streams other than your own.
 
 
 
@@ -164,7 +164,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
         
 					if (publisher != null && publisherView != null) {
 						if (publisherControlBarView == null) {
-							publisherControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, streamName, mainLayout, MainActivity.this);
+							publisherControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.PublisherView, streamName, mainLayout, MainActivity.this, publisher.getPublishVideo(), publisher.getPublishAudio());
 							mainLayout.addView(publisherControlBarView);   
 							publisherControlBarView.setVisibility(View.INVISIBLE);						 
 						 }
@@ -173,7 +173,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					
 					if (subscriber != null && subscriberView != null) {
 						if (subscriberControlBarView == null) {
-							subscriberControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.SubscriberView, streamName, mainLayout, MainActivity.this);
+							subscriberControlBarView = new ControlBarView(MainActivity.this, ControlBarView.ViewType.SubscriberView, streamName, mainLayout, MainActivity.this, subscriber.getSubscribeToVideo(), subscriber.getSubscribeToAudio());
 							subscriberView.addView(subscriberControlBarView);
 							subscriberControlBarView.setVisibility(View.INVISIBLE);
 						}	
@@ -200,15 +200,14 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					publisher.setName("hello");
 					publisher.setListener(MainActivity.this);
 					//RelativeLayout.LayoutParams publisherViewParams= new RelativeLayout.LayoutParams(300, 400);
-					RelativeLayout.LayoutParams publisherViewParams=ScalingImageUtil.getImageScaleParams(MainActivity.this, publisher.getView().getLayoutParams().width, publisher.getView().getLayoutParams().height, 300, 240);
+					RelativeLayout.LayoutParams publisherViewParams=ScalingImageUtil.getImageScaleParams(MainActivity.this, publisher.getView().getLayoutParams().width, publisher.getView().getLayoutParams().height, 310, 240);
 					publisherViewParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
 					publisherViewParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
 					publisherViewParams.bottomMargin=measurePixels(8);
 					publisherViewParams.rightMargin=measurePixels(8);;
 					publisherView.setLayoutParams(publisherViewParams);
 					publisher.getView().setOnClickListener(new ControlBarClickViewListener(publisher.getName()));
-					publisher.getView().bringToFront();
-				
+					//publisher.setPublishVideo(false);
 					session.publish(publisher);		
 				
 				}

@@ -42,6 +42,8 @@ public class ControlBarView  extends RelativeLayout {
     private Context context;
     private Boolean showNameBar;
     private Listener controlBarListener;
+    private Boolean hasAudio;
+    private Boolean hasVideo;
 
     /**
      * Layout Mode depending on density.
@@ -76,7 +78,7 @@ public class ControlBarView  extends RelativeLayout {
      * @param mainLayout, main app container.
      * @param listener, listener for controlbar actions.
      **/
-    public ControlBarView(Context context, ViewType type, String name, RelativeLayout mainLayout, Listener listener) {
+    public ControlBarView(Context context, ViewType type, String name, RelativeLayout mainLayout, Listener listener, boolean hasVideo, boolean hasAudio) {
 		super(context);
 		
 		this.name = name;
@@ -85,6 +87,8 @@ public class ControlBarView  extends RelativeLayout {
 		this.context = context;
 		this.showNameBar = true;
 		this.controlBarListener = listener;
+		this.hasAudio=hasAudio;
+		this.hasVideo=hasVideo;
 		
 		RelativeLayout.LayoutParams controlParams = new RelativeLayout.LayoutParams(mainLayout.getWidth(), measurePixels(CONTROL_PANEL_HEIGHT));
 		
@@ -98,16 +102,13 @@ public class ControlBarView  extends RelativeLayout {
 			controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		}
 		
-		setBackgroundColor(0);
+		setBackgroundColor(0xFF282828);
 		setBackgroundResource(R.drawable.shadow_gradient);
 		getBackground().setAlpha(45);
 		
 		controlParams.addRule(RelativeLayout.CENTER_HORIZONTAL, RelativeLayout.TRUE);
 		controlParams.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
-		//controlParams.topMargin = measurePixels(8);
 		controlParams.bottomMargin = measurePixels(8);
-		//controlParams.rightMargin = measurePixels(8);
-		//controlParams.leftMargin = measurePixels(8);
 		
 		setLayoutParams(controlParams);
 		
@@ -138,7 +139,7 @@ public class ControlBarView  extends RelativeLayout {
 	
 		//camera control
 		if (ViewType.PublisherView == type) {
-		  if (Camera.getNumberOfCameras() > 1){
+		  if (Camera.getNumberOfCameras() > 1 && hasVideo){
 			//switch cameraButton
 			SVGViewButton camView = new SVGViewButton(context, SVGControlIcons.CAMERA, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
 			camButtonContainer = SVGViewButton.createSVGButtonLayout(context, true);
@@ -155,26 +156,26 @@ public class ControlBarView  extends RelativeLayout {
 		  }
 		
 		}
-		
-		//mic control
-		SVGViewButton mutedMicView = new SVGViewButton(context, SVGControlIcons.MIC_MUTED, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
-		SVGViewButton micView = new SVGViewButton(context, SVGControlIcons.MIC_UNMUTED, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
-		muteButtonContainer = SVGViewButton.createSVGButtonLayout(context, true);
-		muteButtonContainer.addButton(micView);
-		muteButtonContainer.addButton(mutedMicView);
-		muteButtonContainer.setOnClickListener(new OnClickListener() {
+		if(hasAudio){
+			//mic control
+			SVGViewButton mutedMicView = new SVGViewButton(context, SVGControlIcons.MIC_MUTED, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
+			SVGViewButton micView = new SVGViewButton(context, SVGControlIcons.MIC_UNMUTED, measurePixels(CONTROL_BUTTON_WIDTH), measurePixels(CONTROL_BUTTON_HEIGHT));
+			muteButtonContainer = SVGViewButton.createSVGButtonLayout(context, true);
+			muteButtonContainer.addButton(micView);
+			muteButtonContainer.addButton(mutedMicView);
+			muteButtonContainer.setOnClickListener(new OnClickListener() {
 			
-			public void onClick(View v) {
-				muteButtonContainer.swapButtons();
-				muteState = !muteState;
-				if (null != controlBarListener) {
-					controlBarListener.onOverlayControlButtonClicked(ButtonType.MuteButton, ControlBarView.this.viewType, muteState ? 1 : 0);
-				}
-
-			}});
-		rightControlBar.addView(muteButtonContainer);
-		addView(rightControlBar, rightParams);				
+				public void onClick(View v) {
+					muteButtonContainer.swapButtons();
+					muteState = !muteState;
+					if (null != controlBarListener) {
+						controlBarListener.onOverlayControlButtonClicked(ButtonType.MuteButton, ControlBarView.this.viewType, muteState ? 1 : 0);
+					}
+				}});
+			rightControlBar.addView(muteButtonContainer);
+			addView(rightControlBar, rightParams);				
 		
+		}
 		
 		//label name
 		nameBar = createNameView(context);
