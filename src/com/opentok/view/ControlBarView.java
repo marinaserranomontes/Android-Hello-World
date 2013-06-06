@@ -42,9 +42,7 @@ public class ControlBarView  extends RelativeLayout {
     private Context context;
     private Boolean showNameBar;
     private Listener controlBarListener;
-    private Boolean hasAudio;
-    private Boolean hasVideo;
-
+   
     /**
      * Layout Mode depending on density.
      **/
@@ -87,8 +85,6 @@ public class ControlBarView  extends RelativeLayout {
 		this.context = context;
 		this.showNameBar = true;
 		this.controlBarListener = listener;
-		this.hasAudio=hasAudio;
-		this.hasVideo=hasVideo;
 		
 		RelativeLayout.LayoutParams controlParams = new RelativeLayout.LayoutParams(mainLayout.getWidth(), measurePixels(CONTROL_PANEL_HEIGHT));
 		
