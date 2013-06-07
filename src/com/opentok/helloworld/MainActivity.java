@@ -57,7 +57,7 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
     private Subscriber subscriber;
     private Session session;
     private WakeLock wakeLock;
-    private boolean subscriberToSelf = true; // Change to false if you want to subscribe to streams other than your own.
+    private boolean subscriberToSelf = false; // Change to false if you want to subscribe to streams other than your own.
 
 
 
@@ -207,9 +207,8 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
 					publisherViewParams.rightMargin=measurePixels(8);;
 					publisherView.setLayoutParams(publisherViewParams);
 					publisher.getView().setOnClickListener(new ControlBarClickViewListener(publisher.getName()));
-					//publisher.setPublishVideo(false);
+					publisherView.addView(publisher.getView());
 					session.publish(publisher);		
-				
 				}
 				
 			}});
@@ -244,12 +243,9 @@ public class MainActivity extends Activity implements Publisher.Listener, Subscr
     	//modifying the order of the contained child elements in the layout
     	if(subscriberView.getChildCount()!=0){
     		subscriberView.removeViewAt(0);
-    		publisherView.addView(publisher.getView());
     		subscriberView.addView(subscriber.getView());
     	}
-    	else{
-    		publisherView.addView(publisher.getView());
-    	}
+    	
     }
 
     @Override
